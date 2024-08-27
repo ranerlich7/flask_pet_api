@@ -1,54 +1,97 @@
 from flask import Flask, jsonify, request
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-# Create an instance of the Flask class
 app = Flask(__name__)
 
-pet1 = {'id':1, 'name':'Dixie', 'age':5,'image':'https://t4.ftcdn.net/jpg/01/99/00/79/360_F_199007925_NolyRdRrdYqUAGdVZV38P4WX8pYfBaRP.jpg'}
-pet2 = {'id':2, 'name':'Charlie','age':2,'image':'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg'}
-# {"id":3, "name":"Rexie","age":1,"image":"https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg"}
-pets = [pet1, pet2]
+# Database connection parameters (update with your Render database details)
+DATABASE = {
+    'dbname': 'pets_db_fk2z',
+    'user': 'pets_db_fk2z_user',
+    'password': 'F6wLfd0wmwUnMBZDJ4MgAtVi85pPmQN6',
+    'host': 'dpg-cr6uggrtq21c73frjn8g-a.frankfurt-postgres.render.com',
+    'port': '5432'
+}
 
-# pet list
-@app.route('/pets')
+def get_db_connection():
+    conn = psycopg2.connect(**DATABASE)
+    return conn
+
+@app.route('/')
+def root():
+    return """
+    GET /pets - list of pets <br>
+    GET /pets/<id> - single pet <br>
+    POST /pets - add a pet <br>
+    DELETE /pets/<id> - delete a pet <br>
+    PUT /pets/<id> - update a pet <br>
+"""
+
+@app.route('/pets/', methods=['GET'])
 def pets_list():
-    return pets
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('SELECT * FROM pets;')
+    pets = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(pets)
 
-@app.route('/pets', methods=["POST"])
+@app.route('/pets/', methods=['POST'])
 def add_pet():
-    new_pet = request.get_json()
-    pets.append(new_pet)
-    return {'result':'added succesfuly'}
-
-
-@app.route('/pets/<id>/')
-def single_pet(id):
     try:
-        for pet in pets:
-                if pet['id'] == int(id):
-                    return pet
-    except:
-        print('error in id')
-    return {'result':'Pet not found'}
+        new_pet = request.get_json()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            'INSERT INTO pets ( name, age, image) VALUES ( %s, %s, %s);',
+            ( new_pet['name'], new_pet['age'], new_pet['image'])
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'result': 'added successfully'}), 201
+    except Exception as e:
+        print(e)
+    return jsonify({'result': 'unexpected error in add'}), 400
 
-# Delete a pet by ID
+
+@app.route('/pets/<int:id>/', methods=['GET'])
+def single_pet(id):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('SELECT * FROM pets WHERE id = %s;', (id,))
+    pet = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if pet:
+        return jsonify(pet)
+    return jsonify({'result': 'Pet not found'}), 404
+
 @app.route('/pets/<int:id>', methods=['DELETE'])
 def delete_pet(id):
-    global pets
-    pets = [pet for pet in pets if pet['id'] != id]
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM pets WHERE id = %s;', (id,))
+    conn.commit()
+    cur.close()
+    conn.close()
     return jsonify({'result': 'Pet deleted successfully'}), 200
 
-# Delete a pet by ID
 @app.route('/pets/<int:id>', methods=['PUT'])
 def update_pet(id):
-    for pet in pets:
-        if pet['id'] == int(id):
-            updated_pet = request.get_json()
-            pets.remove(pet)
-            pets.append(updated_pet)
-            return jsonify({'result': 'Pet updated successfully'}), 200
-    return jsonify({'result': 'Pet not found'}), 400
+    updated_pet = request.get_json()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        'UPDATE pets SET name = %s, age = %s, image = %s WHERE id = %s;',
+        (updated_pet['name'], updated_pet['age'], updated_pet['image'], id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'result': 'Pet updated successfully'}), 200
 
-
-# Run the app only if this script is executed (not imported)
 if __name__ == '__main__':
     app.run(debug=True)
