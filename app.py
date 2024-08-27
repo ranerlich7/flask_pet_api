@@ -2,8 +2,10 @@ from flask import Flask, jsonify, request
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask_cors import CORS
+from flasgger import Swagger, swag_from
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
 # Initialize CORS
 CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5500","https://petshop-front-1bmj.onrender.com"]}})
@@ -32,6 +34,27 @@ def root():
 """
 
 @app.route('/pets/', methods=['GET'])
+@swag_from({
+    'tags': ['Pets'],
+    'summary': 'Get list of pets',
+    'responses': {
+        '200': {
+            'description': 'List of pets',
+            'schema': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'integer'},
+                        'name': {'type': 'string'},
+                        'age': {'type': 'integer'},
+                        'image': {'type': 'string'}
+                    }
+                }
+            }
+        }
+    }
+})
 def pets_list():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
