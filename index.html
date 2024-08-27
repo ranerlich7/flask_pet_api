@@ -22,9 +22,9 @@
     <br /><br />
     <div id="display" class="card-group"></div>
     <script>
-      let myDestinations = [];
-      // display.innerHTML = myDestinations.join('<BR>')
-      const HOST = "https://json-server-222222.onrender.com/destinations";
+      let myPets = [];
+      // display.innerHTML = myPets.join('<BR>')
+      const HOST = "http://127.0.0.1:5000/pets/";
       async function deleteDestination(destinationID) {
         const response = await axios.delete(`${HOST}/${destinationID}`);
         alert("delete succesfuly");
@@ -39,27 +39,27 @@
 
         const response = await axios.post(HOST, newDestination);
         console.log("added successfuly");
-        displayDestinations();
+        displayPets();
       }
 
       getDestinations();
       async function getDestinations() {
         const response = await axios.get(`${HOST}`);
-        myDestinations = response.data;
-        displayDestinations();
+        myPets = response.data;
+        displayPets();
       }
 
-      function displayDestinations() {
+      function displayPets() {
         let finalStr = "";
-        for (let i = 0; i < myDestinations.length; i++) {
+        for (let i = 0; i < myPets.length; i++) {
           const destinationStr = `
                 <div class="col">
                 <div class="card" style="width: 18rem;max-width: 200px;">
-                    <img src="${myDestinations[i].image}" class="card-img-top" alt="...">
+                    <img src="${myPets[i].image}" class="card-img-top" alt="...">
                     <div class="card-body">
-                        <h5 class="card-title">${myDestinations[i].name} - ${myDestinations[i].score}</h5>
-                        <p class="card-text">${myDestinations[i].description}</p>
-                        <button class="btn btn-danger" onclick="deleteDestination('${myDestinations[i].id}')">Delete</button>
+                        <h5 class="card-title">${myPets[i].name} - is ${myPets[i].age} years old</h5>
+                        <p class="card-text">${myPets[i].description}</p>
+                        <button class="btn btn-danger" onclick="deleteDestination('${myPets[i].id}')">Delete</button>
                         <button class="btn btn-primary" onclick="editDestination(${i})">Edit</button>
                     </div>
                 </div>

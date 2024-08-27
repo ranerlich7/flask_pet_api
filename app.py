@@ -1,8 +1,12 @@
 from flask import Flask, jsonify, request
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+# Initialize CORS
+CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5500",]}})
 
 # Database connection parameters (update with your Render database details)
 DATABASE = {
